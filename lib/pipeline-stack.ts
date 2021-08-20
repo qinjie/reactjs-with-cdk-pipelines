@@ -10,7 +10,7 @@ import * as path from "path";
 export class PipelineStack extends cdk.Stack {
   public readonly pipeline: pipelines.CdkPipeline;
 
-  readonly website_src_folder = "../src";
+  readonly website_src_folder = "src";
   readonly repo_owner: string = process.env.REPO_OWNER!;
   readonly repo_name: string = process.env.REPO_NAME!;
   readonly repo_branch: string = process.env.REPO_BRANCH!;
@@ -125,12 +125,12 @@ export class PipelineStack extends cdk.Stack {
       outputs: [buildArtifact],
       project: new codebuild.PipelineProject(
         this,
-        `${this.moduleName}WebsiteProject`,
+        `${this.moduleName}CodeBuildProject`,
         {
-          projectName: `${this.moduleName}WebsiteProject`,
+          projectName: `${this.moduleName}CodeBuildProject`,
           buildSpec: codebuild.BuildSpec.fromSourceFilename(
-            /* Use buildspec.yml file in current folder */
-            path.join(__dirname, "buildspec.yml")
+            /* Use buildspec.yml file in src folder */
+            path.join(this.website_src_folder, "buildspec.yml")
           ),
           /* Use code to define buildspec instead of yml file */
           // buildSpec: codebuild.BuildSpec.fromObject({
