@@ -26,7 +26,7 @@ export class ReactjsCloudfrontStack extends cdk.Stack {
     super(scope, id, props);
 
     // Create S3 Bucket
-    const bucket = new s3.Bucket(this, "ReactAppBucket", {
+    const bucket = new s3.Bucket(this, `WebsiteBucket`, {
       bucketName: props.domainName,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY,

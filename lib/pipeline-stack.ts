@@ -20,8 +20,11 @@ export class PipelineStack extends cdk.Stack {
   readonly hostedZoneName = process.env.HOSTED_ZONE_NAME!;
   readonly hostedZoneId = process.env.HOSTED_ZONE_ID!;
 
+  readonly moduleName: string;
+
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+    this.moduleName = id;
 
     const sourceArtifact = new codepipeline.Artifact();
     const buildArtifact = new codepipeline.Artifact();
@@ -41,7 +44,7 @@ export class PipelineStack extends cdk.Stack {
       /* For same account deployment, Disable Customer Master Keys to save cost */
       crossAccountKeys: false,
       // Other setups
-      pipelineName: id,
+      pipelineName: this.moduleName,
       cloudAssemblyArtifact,
       sourceAction,
       synthAction,
@@ -51,12 +54,16 @@ export class PipelineStack extends cdk.Stack {
 
     /* Add website stack */
     const stageDev = this.pipeline.addStage("dev");
-    const websiteStage = new WebsiteStage(this, `${id}WebStage`, {
-      domainName: this.domainName,
-      hostedZoneName: this.hostedZoneName,
-      hostedZoneId: this.hostedZoneId,
-      ...props,
-    });
+    const websiteStage = new WebsiteStage(
+      this,
+      `${this.moduleName}WebiteStage`,
+      {
+        domainName: this.domainName,
+        hostedZoneName: this.hostedZoneName,
+        hostedZoneId: this.hostedZoneId,
+        ...props,
+      }
+    );
     stageDev.addApplication(websiteStage);
 
     /* Add a stage to build and deploy website */
@@ -116,33 +123,37 @@ export class PipelineStack extends cdk.Stack {
       runOrder: runOrder,
       input: sourceArtifact,
       outputs: [buildArtifact],
-      project: new codebuild.PipelineProject(this, "WebsiteBuildProject", {
-        projectName: "WebsiteBuildProject",
-        buildSpec: codebuild.BuildSpec.fromSourceFilename(
-          /* Use buildspec.yml file in current folder */
-          path.join(__dirname, "buildspec.yml")
-        ),
-        /* Use code to define buildspec instead of yml file */
-        // buildSpec: codebuild.BuildSpec.fromObject({
-        //   version: "0.2",
-        //   phases: {
-        //     install: {
-        //       commands: ["cd src", "npm install"],
-        //     },
-        //     build: {
-        //       commands: ["npm run build"],
-        //     },
-        //   },
-        //   artifacts: {
-        //     "base-directory": "src/build",
-        //     files: "**/*",
-        //   },
-        // }),
-        environment: {
-          buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
-          computeType: codebuild.ComputeType.SMALL,
-        },
-      }),
+      project: new codebuild.PipelineProject(
+        this,
+        `${this.moduleName}WebsiteProject`,
+        {
+          projectName: `${this.moduleName}WebsiteProject`,
+          buildSpec: codebuild.BuildSpec.fromSourceFilename(
+            /* Use buildspec.yml file in current folder */
+            path.join(__dirname, "buildspec.yml")
+          ),
+          /* Use code to define buildspec instead of yml file */
+          // buildSpec: codebuild.BuildSpec.fromObject({
+          //   version: "0.2",
+          //   phases: {
+          //     install: {
+          //       commands: ["cd src", "npm install"],
+          //     },
+          //     build: {
+          //       commands: ["npm run build"],
+          //     },
+          //   },
+          //   artifacts: {
+          //     "base-directory": "src/build",
+          //     files: "**/*",
+          //   },
+          // }),
+          environment: {
+            buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
+            computeType: codebuild.ComputeType.SMALL,
+          },
+        }
+      ),
     });
   }
 
@@ -151,7 +162,11 @@ export class PipelineStack extends cdk.Stack {
     bucketName: string,
     runOrder: number
   ): codepipeline_actions.S3DeployAction {
-    const bucket = s3.Bucket.fromBucketName(this, "WebsiteBucket", bucketName);
+    const bucket = s3.Bucket.fromBucketName(
+      this,
+      `${this.moduleName}WebsiteBucket`,
+      bucketName
+    );
 
     return new codepipeline_actions.S3DeployAction({
       actionName: "Deploy",
