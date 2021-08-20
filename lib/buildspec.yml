@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 12
+    commands:
+      - cd src
+      - npm install
+  build:
+    commands:
+      - npm run build
+
+artifacts:
+  base-directory: src/build
+  files:
+    - "**/*"
+
+cache:
+  paths:
+    - "src/node_modules/**/*"
