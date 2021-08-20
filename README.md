@@ -1,5 +1,9 @@
 # ReactJS with CDK Pipelines
 
+This project demonstrates on how to deploy ReactJS project to CloudFormation or S3 Bucket using AWS CDK.
+
+
+
 ## 1. Initial Project Structure
 
 ### Prerequisite
@@ -16,8 +20,9 @@ Install and configure following tools on your computer.
 
 Initialize a blank CDK project.
 
-```
-cdk init app --language typescript
+```bash
+cdk init reactjs-with-cdk-pipelines --language typescript
+cd reactjs-with-cdk-pipelines
 ```
 
 Folder structure with key files/folders in a CDK project.
@@ -51,7 +56,7 @@ npm install @aws-cdk/core @aws-cdk/aws-s3 @aws-cdk/aws-cloudfront @aws-cdk/aws-i
 
 Install other libraries
 
-```
+```bash
 npm install dotenv
 ```
 
@@ -59,9 +64,39 @@ npm install dotenv
 
 Create a React App using `create-react-app` in `src` folder.
 
-```
+```bash
 npx create-react-app src
 ```
+
+Make a copy of the `buildspec.yml` file in the above `src` folder. A copy of this file can be found in `doc` folder in GitHub repo.
+
+```yaml
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 12
+    commands:
+      - cd src
+      - npm install
+  build:
+    commands:
+      - npm run build
+
+artifacts:
+  base-directory: src/build
+  files:
+    - "**/*"
+
+cache:
+  paths:
+    - "src/node_modules/**/*"
+```
+
+
+
+
 
 ## 2. Stacks
 
@@ -71,13 +106,17 @@ This project provides 2 main type of web deployment stack.
 
 - Create an S3 bucket and configure it for web hosting
 - Deploy the website to the bucket
-- It can only provide HTTP service
+- It can only provide HTTP service (Not HTTPS)
+
+
 
 #### `reactjs-cloudfront-stack.ts`
 
 - Create an S3 bucket as staging area
 - Create a CloudFront distribution using the staging S3 bucket
 - Assign a certificate to the CloudFront distribution such that it can provide HTTPS service
+
+
 
 ## 3. Deployment
 

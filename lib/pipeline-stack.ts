@@ -56,7 +56,7 @@ export class PipelineStack extends cdk.Stack {
     const stageDev = this.pipeline.addStage("dev");
     const websiteStage = new WebsiteStage(
       this,
-      `${this.moduleName}WebiteStage`,
+      `${this.moduleName}WebsiteStage`,
       {
         domainName: this.domainName,
         hostedZoneName: this.hostedZoneName,
