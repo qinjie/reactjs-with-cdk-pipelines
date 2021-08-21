@@ -10,7 +10,7 @@ import * as path from "path";
 export class PipelineStack extends cdk.Stack {
   public readonly pipeline: pipelines.CdkPipeline;
 
-  readonly website_src_folder = "src";
+  readonly website_src_folder = "frontend";
   readonly repo_owner: string = process.env.REPO_OWNER!;
   readonly repo_name: string = process.env.REPO_NAME!;
   readonly repo_branch: string = process.env.REPO_BRANCH!;
