@@ -14,7 +14,7 @@ export class WebsiteStage extends cdk.Stage {
   constructor(scope: cdk.Construct, id: string, props: WebsiteStageProps) {
     super(scope, id, props);
 
-    // const stack = new ReactjsS3Stack(this, `${id}S3`, props);
+    // const stack = new ReactjsS3Stack(this, `${id}S3Delpoy`, props);
     const stack = new ReactjsCloudfrontStack(this, `${id}Cloudfront`, props);
     this.output = stack.output;
   }

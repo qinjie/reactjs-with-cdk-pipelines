@@ -26,7 +26,7 @@ export class ReactjsCloudfrontStack extends cdk.Stack {
     super(scope, id, props);
 
     // Create S3 Bucket
-    const bucket = new s3.Bucket(this, `WebsiteBucket`, {
+    const bucket = new s3.Bucket(this, "ReactAppBucket", {
       bucketName: props.domainName,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -34,8 +34,6 @@ export class ReactjsCloudfrontStack extends cdk.Stack {
       // websiteIndexDocument: "index.html",
       // websiteErrorDocument: "index.html",
     });
-
-    /* Currently CDK has problem with existing S3 bucket */
     // const bucket = s3.Bucket.fromBucketName(
     //   this,
     //   "ReactAppBucket",
@@ -99,7 +97,7 @@ export class ReactjsCloudfrontStack extends cdk.Stack {
 
     const distribution = new cloudfront.CloudFrontWebDistribution(
       this,
-      "CloudFrontWebDistribution",
+      "Cloudfront",
       {
         originConfigs: [
           {

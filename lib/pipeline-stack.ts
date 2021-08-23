@@ -5,16 +5,18 @@ import * as pipelines from "@aws-cdk/pipelines";
 import * as codebuild from "@aws-cdk/aws-codebuild";
 import * as s3 from "@aws-cdk/aws-s3";
 import { WebsiteStage } from "./website-stage";
-import * as path from "path";
+
+require("dotenv").config();
 
 export class PipelineStack extends cdk.Stack {
   public readonly pipeline: pipelines.CdkPipeline;
 
-  readonly website_src_folder = "frontend";
   readonly repo_owner: string = process.env.REPO_OWNER!;
   readonly repo_name: string = process.env.REPO_NAME!;
   readonly repo_branch: string = process.env.REPO_BRANCH!;
   readonly secrets_manager_var: string = process.env.SECRETS_MANAGER_VAR!;
+
+  readonly buildspec_file: string = process.env.BUILDSPEC_FILE!;
 
   readonly domainName = process.env.DOMAIN_NAME!;
   readonly hostedZoneName = process.env.HOSTED_ZONE_NAME!;
@@ -24,14 +26,14 @@ export class PipelineStack extends cdk.Stack {
 
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
-    this.moduleName = id;
 
+    this.moduleName = id;
     const sourceArtifact = new codepipeline.Artifact();
     const buildArtifact = new codepipeline.Artifact();
     const cloudAssemblyArtifact = new codepipeline.Artifact();
 
     /* Get source code from repo */
-    const sourceAction = this.getSourceAction(sourceArtifact);
+    const sourceAction = this.getGitHubSourceAction(sourceArtifact);
 
     /* Builds source code into a could assembly artifact */
     const synthAction = this.getNpmSynthAction(
@@ -73,11 +75,13 @@ export class PipelineStack extends cdk.Stack {
       this.getCodeBuildAction(
         sourceArtifact,
         buildArtifact,
+        `${this.moduleName}CodeBuildProject`,
         buildDeployStage.nextSequentialRunOrder()
       ),
       this.getDeployAction(
         buildArtifact,
         this.domainName,
+        `${this.moduleName}WebsiteBucket`,
         buildDeployStage.nextSequentialRunOrder()
       )
     );
@@ -98,7 +102,7 @@ export class PipelineStack extends cdk.Stack {
     });
   }
 
-  private getSourceAction(
+  private getGitHubSourceAction(
     sourceArtifact: codepipeline.Artifact
   ): codepipeline_actions.Action {
     const sourceActionProps = {
@@ -116,6 +120,7 @@ export class PipelineStack extends cdk.Stack {
   private getCodeBuildAction(
     sourceArtifact: codepipeline.Artifact,
     buildArtifact: codepipeline.Artifact,
+    constructId: string,
     runOrder: number
   ): codepipeline_actions.CodeBuildAction {
     return new codepipeline_actions.CodeBuildAction({
@@ -123,50 +128,41 @@ export class PipelineStack extends cdk.Stack {
       runOrder: runOrder,
       input: sourceArtifact,
       outputs: [buildArtifact],
-      project: new codebuild.PipelineProject(
-        this,
-        `${this.moduleName}CodeBuildProject`,
-        {
-          projectName: `${this.moduleName}CodeBuildProject`,
-          buildSpec: codebuild.BuildSpec.fromSourceFilename(
-            /* Use buildspec.yml file in src folder */
-            path.join(this.website_src_folder, "buildspec.yml")
-          ),
-          /* Use code to define buildspec instead of yml file */
-          // buildSpec: codebuild.BuildSpec.fromObject({
-          //   version: "0.2",
-          //   phases: {
-          //     install: {
-          //       commands: ["cd src", "npm install"],
-          //     },
-          //     build: {
-          //       commands: ["npm run build"],
-          //     },
-          //   },
-          //   artifacts: {
-          //     "base-directory": "src/build",
-          //     files: "**/*",
-          //   },
-          // }),
-          environment: {
-            buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
-            computeType: codebuild.ComputeType.SMALL,
-          },
-        }
-      ),
+      project: new codebuild.PipelineProject(this, constructId, {
+        projectName: constructId,
+        /* Use buildspec.yml file in src folder */
+        buildSpec: codebuild.BuildSpec.fromSourceFilename(this.buildspec_file),
+        /* Use code to define buildspec instead of yml file */
+        // buildSpec: codebuild.BuildSpec.fromObject({
+        //   version: "0.2",
+        //   phases: {
+        //     install: {
+        //       commands: ["cd src", "npm install"],
+        //     },
+        //     build: {
+        //       commands: ["npm run build"],
+        //     },
+        //   },
+        //   artifacts: {
+        //     "base-directory": "src/build",
+        //     files: "**/*",
+        //   },
+        // }),
+        environment: {
+          buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
+          computeType: codebuild.ComputeType.SMALL,
+        },
+      }),
     });
   }
 
   private getDeployAction(
     input: codepipeline.Artifact,
     bucketName: string,
+    constructId: string,
     runOrder: number
   ): codepipeline_actions.S3DeployAction {
-    const bucket = s3.Bucket.fromBucketName(
-      this,
-      `${this.moduleName}WebsiteBucket`,
-      bucketName
-    );
+    const bucket = s3.Bucket.fromBucketName(this, constructId, bucketName);
 
     return new codepipeline_actions.S3DeployAction({
       actionName: "Deploy",
